@@ -18,7 +18,7 @@
 ##
 
 BINARY = adc
+OPENCM3_DIR = $(realpath libopencm3)
+LDSCRIPT = ./stm32f0-discovery.ld
 
-LDSCRIPT = ../stm32f0-discovery.ld
-
-include ../../Makefile.include
+include ./Makefile.include
