@@ -17,8 +17,10 @@
 ## along with this library.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-BINARY = adc
+PROJECT_NAME = myProject
 OPENCM3_DIR = $(realpath libopencm3)
 LDSCRIPT = ./stm32f0-discovery.ld
 BINDIR = ./bin
+SRC_DIR = ./src
+SRC_FILES = $(wildcard $(SRC_DIR)/*)
 include ./Makefile.include

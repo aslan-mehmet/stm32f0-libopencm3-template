@@ -47,7 +47,8 @@ CSTD		?= -std=c99
 ###############################################################################
 # Source files
 
-OBJS		+= $(BINDIR)/$(BINARY).o
+OBJS		:= $(addprefix $(BINDIR)/, $(notdir $(SRC_FILES)))
+OBJS		:= $(OBJS:.c=.o)
 
 
 
@@ -60,7 +61,7 @@ endif
 DEFS		+= -I$(OPENCM3_DIR)/include
 LDFLAGS		+= -L$(OPENCM3_DIR)/lib
 LDLIBS		+= -l$(LIBNAME)
-LDSCRIPT	?= $(BINARY).ld
+LDSCRIPT	?= $(PROJECT_NAME).ld
 
 
 OPENCM3_SCRIPT_DIR = $(OPENCM3_DIR)/scripts
@@ -117,14 +118,14 @@ LDLIBS		+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 
 all: elf
 
-elf: $(BINDIR)/$(BINARY).elf
-bin: $(BINDIR)/$(BINARY).bin
-hex: $(BINDIR)/$(BINARY).hex
-srec: $(BINDIR)/$(BINARY).srec
-list: $(BINDIR)/$(BINARY).list
+elf: $(BINDIR)/$(PROJECT_NAME).elf
+bin: $(BINDIR)/$(PROJECT_NAME).bin
+hex: $(BINDIR)/$(PROJECT_NAME).hex
+srec: $(BINDIR)/$(PROJECT_NAME).srec
+list: $(BINDIR)/$(PROJECT_NAME).list
 
-images: $(BINDIR)/$(BINARY).images
-flash: $(BINDIR)/$(BINARY).stlink-flash
+images: $(BINDIR)/$(PROJECT_NAME).images
+flash: $(BINDIR)/$(PROJECT_NAME).stlink-flash
 
 # Either verify the user provided LDSCRIPT exists, or generate it.
 ifeq ($(strip $(DEVICE)),)
@@ -172,20 +173,10 @@ $(BINDIR)/%.elf $(BINDIR)/%.map: $(OBJS) $(LDSCRIPT) $(OPENCM3_DIR)/lib/lib$(LIB
 	@printf "  LD      $(*).elf\n"
 	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(BINDIR)/$(*).elf
 
-$(BINDIR)/%.o: %.c
+$(BINDIR)/%.o: $(SRC_DIR)/%.c
 	@printf "  CC      $(*).c\n"
 	@mkdir -p $(BINDIR)
-	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(*).c
-
-$(BINDIR)/%.o: %.cxx
-	@mkdir -p $(BINDIR)
-	@printf "  CXX     $(*).cxx\n"
-	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(*).cxx
-
-$(BINDIR)/%.o: %.cpp
-	@mkdir -p $(BINDIR)
-	@printf "  CXX     $(*).cpp\n"
-	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(*).cpp
+	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(SRC_DIR)/$(*).c
 
 clean:
 	@printf "  CLEAN\n"
