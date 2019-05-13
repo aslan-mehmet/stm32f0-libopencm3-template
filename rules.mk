@@ -39,9 +39,6 @@ OBJCOPY		:= $(PREFIX)-objcopy
 OBJDUMP		:= $(PREFIX)-objdump
 GDB		:= $(PREFIX)-gdb
 STFLASH		= $(shell which st-flash)
-STYLECHECK	:= /checkpatch.pl
-STYLECHECKFLAGS	:= --no-tree -f --terse --mailback
-STYLECHECKFILES	:= $(shell find . -name '*.[ch]')
 OPT		:= -Os
 DEBUG		:= -ggdb3
 CSTD		?= -std=c99
@@ -53,45 +50,18 @@ CSTD		?= -std=c99
 OBJS		+= $(BINARY).o
 
 
-ifeq ($(strip $(OPENCM3_DIR)),)
-# user has not specified the library path, so we try to detect it
-
-# where we search for the library
-LIBPATHS := ./libopencm3 ../../../../libopencm3 ../../../../../libopencm3
-
-OPENCM3_DIR := $(wildcard $(LIBPATHS:=/locm3.sublime-project))
-OPENCM3_DIR := $(firstword $(dir $(OPENCM3_DIR)))
-
-ifeq ($(strip $(OPENCM3_DIR)),)
-$(warning Cannot find libopencm3 library in the standard search paths.)
-$(error Please specify it through OPENCM3_DIR variable!)
-endif
-endif
 
 ifeq ($(V),1)
 $(info Using $(OPENCM3_DIR) path to library)
 endif
 
-define ERR_DEVICE_LDSCRIPT_CONFLICT
-You can either specify DEVICE=blah, and have the LDSCRIPT generated,
-or you can provide LDSCRIPT, and ensure CPPFLAGS, LDFLAGS and LDLIBS
-all contain the correct values for the target you wish to use.
-You cannot provide both!
-endef
 
-ifeq ($(strip $(DEVICE)),)
 # Old style, assume LDSCRIPT exists
 DEFS		+= -I$(OPENCM3_DIR)/include
 LDFLAGS		+= -L$(OPENCM3_DIR)/lib
 LDLIBS		+= -l$(LIBNAME)
 LDSCRIPT	?= $(BINARY).ld
-else
-# New style, assume device is provided, and we're generating the rest.
-ifneq ($(strip $(LDSCRIPT)),)
-$(error $(ERR_DEVICE_LDSCRIPT_CONFLICT))
-endif
-include $(OPENCM3_DIR)/mk/genlink-config.mk
-endif
+
 
 OPENCM3_SCRIPT_DIR = $(OPENCM3_DIR)/scripts
 EXAMPLES_SCRIPT_DIR	= $(OPENCM3_DIR)/../scripts
@@ -219,52 +189,11 @@ clean:
 	@printf "  CLEAN\n"
 	$(Q)$(RM) $(GENERATED_BINARIES) generated.* $(OBJS) $(OBJS:%.o=%.d)
 
-stylecheck: $(STYLECHECKFILES:=.stylecheck)
-styleclean: $(STYLECHECKFILES:=.styleclean)
-
-# the cat is due to multithreaded nature - we like to have consistent chunks of text on the output
-%.stylecheck: %
-	$(Q)$(OPENCM3_SCRIPT_DIR)$(STYLECHECK) $(STYLECHECKFLAGS) $* > $*.stylecheck; \
-		if [ -s $*.stylecheck ]; then \
-			cat $*.stylecheck; \
-		else \
-			rm -f $*.stylecheck; \
-		fi;
-
-%.styleclean:
-	$(Q)rm -f $*.stylecheck;
-
-
 %.stlink-flash: %.bin
 	@printf "  FLASH  $<\n"
 	$(STFLASH) write $(*).bin 0x8000000
 
-ifeq ($(BMP_PORT),)
-ifeq ($(OOCD_FILE),)
-%.flash: %.elf
-	@printf "  FLASH   $<\n"
-	(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
-		$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
-		-f target/$(OOCD_TARGET).cfg \
-		-c "program $(*).elf verify reset exit" \
-		$(NULL)
-else
-%.flash: %.elf
-	@printf "  FLASH   $<\n"
-	(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
-		$(OOCD) -f $(OOCD_FILE) \
-		-c "program $(*).elf verify reset exit" \
-		$(NULL)
-endif
-else
-%.flash: %.elf
-	@printf "  GDB   $(*).elf (flash)\n"
-	$(GDB) --batch \
-		   -ex 'target extended-remote $(BMP_PORT)' \
-		   -x $(EXAMPLES_SCRIPT_DIR)/black_magic_probe_flash.scr \
-		   $(*).elf
-endif
 
-.PHONY: images clean stylecheck styleclean elf bin hex srec list
+.PHONY: images clean elf bin hex srec list
 
 -include $(OBJS:.o=.d)
