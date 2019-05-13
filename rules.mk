@@ -127,16 +127,6 @@ list: $(BIN_DIR)/$(PROJECT_NAME).list
 images: $(BIN_DIR)/$(PROJECT_NAME).images
 flash: $(BIN_DIR)/$(PROJECT_NAME).stlink-flash
 
-# Either verify the user provided LD_SCRIPT exists, or generate it.
-ifeq ($(strip $(DEVICE)),)
-$(LD_SCRIPT):
-    ifeq (,$(wildcard $(LD_SCRIPT)))
-        $(error Unable to find specified linker script: $(LD_SCRIPT))
-    endif
-else
-include $(OPENCM3_DIR)/mk/genlink-rules.mk
-endif
-
 $(OPENCM3_DIR)/lib/lib$(LIB_NAME).a:
 ifeq (,$(wildcard $@))
 	$(warning $(LIB_NAME).a not found, attempting to rebuild in $(OPENCM3_DIR))
@@ -169,7 +159,7 @@ $(BIN_DIR)/%.list: $(BIN_DIR)/%.elf
 	@printf "  OBJDUMP $(@)\n"
 	$(Q)$(OBJDUMP) -S $< > $@
 
-$(BIN_DIR)/%.elf $(BIN_DIR)/%.map: $(OBJS) $(LD_SCRIPT) $(OPENCM3_DIR)/lib/lib$(LIB_NAME).a
+$(BIN_DIR)/%.elf $(BIN_DIR)/%.map: $(OBJS) $(OPENCM3_DIR)/lib/lib$(LIB_NAME).a
 	@printf "  LD      $(@)\n"
 	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(BIN_DIR)/$(*).elf
 
