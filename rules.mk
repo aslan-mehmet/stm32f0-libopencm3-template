@@ -47,7 +47,7 @@ CSTD		?= -std=c99
 ###############################################################################
 # Source files
 
-OBJS		+= $(BINARY).o
+OBJS		+= $(BINDIR)/$(BINARY).o
 
 
 
@@ -96,7 +96,7 @@ TGT_CPPFLAGS	+= $(DEFS)
 TGT_LDFLAGS		+= --static -nostartfiles
 TGT_LDFLAGS		+= -T$(LDSCRIPT)
 TGT_LDFLAGS		+= $(ARCH_FLAGS) $(DEBUG)
-TGT_LDFLAGS		+= -Wl,-Map=$(*).map -Wl,--cref
+TGT_LDFLAGS		+= -Wl,-Map=$(BINDIR)/$(*).map -Wl,--cref
 TGT_LDFLAGS		+= -Wl,--gc-sections
 ifeq ($(V),99)
 TGT_LDFLAGS		+= -Wl,--print-gc-sections
@@ -117,15 +117,14 @@ LDLIBS		+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 
 all: elf
 
-elf: $(BINARY).elf
-bin: $(BINARY).bin
-hex: $(BINARY).hex
-srec: $(BINARY).srec
-list: $(BINARY).list
-GENERATED_BINARIES=$(BINARY).elf $(BINARY).bin $(BINARY).hex $(BINARY).srec $(BINARY).list $(BINARY).map
+elf: $(BINDIR)/$(BINARY).elf
+bin: $(BINDIR)/$(BINARY).bin
+hex: $(BINDIR)/$(BINARY).hex
+srec: $(BINDIR)/$(BINARY).srec
+list: $(BINDIR)/$(BINARY).list
 
-images: $(BINARY).images
-flash: $(BINARY).stlink-flash
+images: $(BINDIR)/$(BINARY).images
+flash: $(BINDIR)/$(BINARY).stlink-flash
 
 # Either verify the user provided LDSCRIPT exists, or generate it.
 ifeq ($(strip $(DEVICE)),)
@@ -150,48 +149,51 @@ endif
 print-%:
 	@echo $*=$($*)
 
-%.images: %.bin %.hex %.srec %.list %.map
+$(BINDIR)/%.images: $(BINDIR)/%.bin $(BINDIR)/%.hex $(BINDIR)/%.srec $(BINDIR)/%.list $(BINDIR)/%.map
 	@printf "*** $* images generated ***\n"
 
-%.bin: %.elf
+$(BINDIR)/%.bin: $(BINDIR)/%.elf
 	@printf "  OBJCOPY $(*).bin\n"
-	$(Q)$(OBJCOPY) -Obinary $(*).elf $(*).bin
+	$(Q)$(OBJCOPY) -Obinary $< $@
 
-%.hex: %.elf
+$(BINDIR)/%.hex: $(BINDIR)/%.elf
 	@printf "  OBJCOPY $(*).hex\n"
-	$(Q)$(OBJCOPY) -Oihex $(*).elf $(*).hex
+	$(Q)$(OBJCOPY) -Oihex $<.elf $@.hex
 
-%.srec: %.elf
+$(BINDIR)/%.srec: $(BINDIR)/%.elf
 	@printf "  OBJCOPY $(*).srec\n"
-	$(Q)$(OBJCOPY) -Osrec $(*).elf $(*).srec
+	$(Q)$(OBJCOPY) -Osrec $< $@
 
-%.list: %.elf
+$(BINDIR)/%.list: $(BINDIR)/%.elf
 	@printf "  OBJDUMP $(*).list\n"
-	$(Q)$(OBJDUMP) -S $(*).elf > $(*).list
+	$(Q)$(OBJDUMP) -S $< > $@
 
-%.elf %.map: $(OBJS) $(LDSCRIPT) $(OPENCM3_DIR)/lib/lib$(LIBNAME).a
+$(BINDIR)/%.elf $(BINDIR)/%.map: $(OBJS) $(LDSCRIPT) $(OPENCM3_DIR)/lib/lib$(LIBNAME).a
 	@printf "  LD      $(*).elf\n"
-	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(*).elf
+	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(BINDIR)/$(*).elf
 
-%.o: %.c
+$(BINDIR)/%.o: %.c
 	@printf "  CC      $(*).c\n"
-	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $(*).o -c $(*).c
+	@mkdir -p $(BINDIR)
+	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(*).c
 
-%.o: %.cxx
+$(BINDIR)/%.o: %.cxx
+	@mkdir -p $(BINDIR)
 	@printf "  CXX     $(*).cxx\n"
-	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $(*).o -c $(*).cxx
+	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(*).cxx
 
-%.o: %.cpp
+$(BINDIR)/%.o: %.cpp
+	@mkdir -p $(BINDIR)
 	@printf "  CXX     $(*).cpp\n"
-	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $(*).o -c $(*).cpp
+	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(*).cpp
 
 clean:
 	@printf "  CLEAN\n"
-	$(Q)$(RM) $(GENERATED_BINARIES) generated.* $(OBJS) $(OBJS:%.o=%.d)
+	$(Q)$(RM) -f $(BINDIR)/*
 
-%.stlink-flash: %.bin
+$(BINDIR)/%.stlink-flash: $(BINDIR)/%.bin
 	@printf "  FLASH  $<\n"
-	$(STFLASH) write $(*).bin 0x8000000
+	$(STFLASH) write $< 0x8000000
 
 
 .PHONY: images clean elf bin hex srec list
