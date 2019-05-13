@@ -154,27 +154,27 @@ $(BIN_DIR)/%.images: $(BIN_DIR)/%.bin $(BIN_DIR)/%.hex $(BIN_DIR)/%.srec $(BIN_D
 	@printf "*** $* images generated ***\n"
 
 $(BIN_DIR)/%.bin: $(BIN_DIR)/%.elf
-	@printf "  OBJCOPY $(*).bin\n"
+	@printf "  OBJCOPY $(@)\n"
 	$(Q)$(OBJCOPY) -Obinary $< $@
 
 $(BIN_DIR)/%.hex: $(BIN_DIR)/%.elf
-	@printf "  OBJCOPY $(*).hex\n"
-	$(Q)$(OBJCOPY) -Oihex $<.elf $@.hex
+	@printf "  OBJCOPY $(@)\n"
+	$(Q)$(OBJCOPY) -Oihex $< $@
 
 $(BIN_DIR)/%.srec: $(BIN_DIR)/%.elf
-	@printf "  OBJCOPY $(*).srec\n"
+	@printf "  OBJCOPY $(@)\n"
 	$(Q)$(OBJCOPY) -Osrec $< $@
 
 $(BIN_DIR)/%.list: $(BIN_DIR)/%.elf
-	@printf "  OBJDUMP $(*).list\n"
+	@printf "  OBJDUMP $(@)\n"
 	$(Q)$(OBJDUMP) -S $< > $@
 
 $(BIN_DIR)/%.elf $(BIN_DIR)/%.map: $(OBJS) $(LD_SCRIPT) $(OPENCM3_DIR)/lib/lib$(LIB_NAME).a
-	@printf "  LD      $(*).elf\n"
+	@printf "  LD      $(@)\n"
 	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(BIN_DIR)/$(*).elf
 
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.c
-	@printf "  CC      $(*).c\n"
+	@printf "  CC      $(<)\n"
 	@mkdir -p $(BIN_DIR)
 	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(SRC_DIR)/$(*).c
 
