@@ -47,7 +47,7 @@ CSTD		?= -std=c99
 ###############################################################################
 # Source files
 
-OBJS		:= $(addprefix $(BINDIR)/, $(notdir $(SRC_FILES)))
+OBJS		:= $(addprefix $(BIN_DIR)/, $(notdir $(SRC_FILES)))
 OBJS		:= $(OBJS:.c=.o)
 
 
@@ -57,11 +57,11 @@ $(info Using $(OPENCM3_DIR) path to library)
 endif
 
 DEFS		+= -iquote$(INC_DIR)
-# Old style, assume LDSCRIPT exists
+# Old style, assume LD_SCRIPT exists
 DEFS		+= -I$(OPENCM3_DIR)/include
 LDFLAGS		+= -L$(OPENCM3_DIR)/lib
-LDLIBS		+= -l$(LIBNAME)
-LDSCRIPT	?= $(PROJECT_NAME).ld
+LDLIBS		+= -l$(LIB_NAME)
+LD_SCRIPT	?= $(PROJECT_NAME).ld
 
 
 OPENCM3_SCRIPT_DIR = $(OPENCM3_DIR)/scripts
@@ -95,9 +95,9 @@ TGT_CPPFLAGS	+= $(DEFS)
 # Linker flags
 
 TGT_LDFLAGS		+= --static -nostartfiles
-TGT_LDFLAGS		+= -T$(LDSCRIPT)
+TGT_LDFLAGS		+= -T$(LD_SCRIPT)
 TGT_LDFLAGS		+= $(ARCH_FLAGS) $(DEBUG)
-TGT_LDFLAGS		+= -Wl,-Map=$(BINDIR)/$(*).map -Wl,--cref
+TGT_LDFLAGS		+= -Wl,-Map=$(BIN_DIR)/$(*).map -Wl,--cref
 TGT_LDFLAGS		+= -Wl,--gc-sections
 ifeq ($(V),99)
 TGT_LDFLAGS		+= -Wl,--print-gc-sections
@@ -118,28 +118,28 @@ LDLIBS		+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 
 all: elf
 
-elf: $(BINDIR)/$(PROJECT_NAME).elf
-bin: $(BINDIR)/$(PROJECT_NAME).bin
-hex: $(BINDIR)/$(PROJECT_NAME).hex
-srec: $(BINDIR)/$(PROJECT_NAME).srec
-list: $(BINDIR)/$(PROJECT_NAME).list
+elf: $(BIN_DIR)/$(PROJECT_NAME).elf
+bin: $(BIN_DIR)/$(PROJECT_NAME).bin
+hex: $(BIN_DIR)/$(PROJECT_NAME).hex
+srec: $(BIN_DIR)/$(PROJECT_NAME).srec
+list: $(BIN_DIR)/$(PROJECT_NAME).list
 
-images: $(BINDIR)/$(PROJECT_NAME).images
-flash: $(BINDIR)/$(PROJECT_NAME).stlink-flash
+images: $(BIN_DIR)/$(PROJECT_NAME).images
+flash: $(BIN_DIR)/$(PROJECT_NAME).stlink-flash
 
-# Either verify the user provided LDSCRIPT exists, or generate it.
+# Either verify the user provided LD_SCRIPT exists, or generate it.
 ifeq ($(strip $(DEVICE)),)
-$(LDSCRIPT):
-    ifeq (,$(wildcard $(LDSCRIPT)))
-        $(error Unable to find specified linker script: $(LDSCRIPT))
+$(LD_SCRIPT):
+    ifeq (,$(wildcard $(LD_SCRIPT)))
+        $(error Unable to find specified linker script: $(LD_SCRIPT))
     endif
 else
 include $(OPENCM3_DIR)/mk/genlink-rules.mk
 endif
 
-$(OPENCM3_DIR)/lib/lib$(LIBNAME).a:
+$(OPENCM3_DIR)/lib/lib$(LIB_NAME).a:
 ifeq (,$(wildcard $@))
-	$(warning $(LIBNAME).a not found, attempting to rebuild in $(OPENCM3_DIR))
+	$(warning $(LIB_NAME).a not found, attempting to rebuild in $(OPENCM3_DIR))
 	$(MAKE) -C $(OPENCM3_DIR)
 endif
 
@@ -150,39 +150,39 @@ endif
 print-%:
 	@echo $*=$($*)
 
-$(BINDIR)/%.images: $(BINDIR)/%.bin $(BINDIR)/%.hex $(BINDIR)/%.srec $(BINDIR)/%.list $(BINDIR)/%.map
+$(BIN_DIR)/%.images: $(BIN_DIR)/%.bin $(BIN_DIR)/%.hex $(BIN_DIR)/%.srec $(BIN_DIR)/%.list $(BIN_DIR)/%.map
 	@printf "*** $* images generated ***\n"
 
-$(BINDIR)/%.bin: $(BINDIR)/%.elf
+$(BIN_DIR)/%.bin: $(BIN_DIR)/%.elf
 	@printf "  OBJCOPY $(*).bin\n"
 	$(Q)$(OBJCOPY) -Obinary $< $@
 
-$(BINDIR)/%.hex: $(BINDIR)/%.elf
+$(BIN_DIR)/%.hex: $(BIN_DIR)/%.elf
 	@printf "  OBJCOPY $(*).hex\n"
 	$(Q)$(OBJCOPY) -Oihex $<.elf $@.hex
 
-$(BINDIR)/%.srec: $(BINDIR)/%.elf
+$(BIN_DIR)/%.srec: $(BIN_DIR)/%.elf
 	@printf "  OBJCOPY $(*).srec\n"
 	$(Q)$(OBJCOPY) -Osrec $< $@
 
-$(BINDIR)/%.list: $(BINDIR)/%.elf
+$(BIN_DIR)/%.list: $(BIN_DIR)/%.elf
 	@printf "  OBJDUMP $(*).list\n"
 	$(Q)$(OBJDUMP) -S $< > $@
 
-$(BINDIR)/%.elf $(BINDIR)/%.map: $(OBJS) $(LDSCRIPT) $(OPENCM3_DIR)/lib/lib$(LIBNAME).a
+$(BIN_DIR)/%.elf $(BIN_DIR)/%.map: $(OBJS) $(LD_SCRIPT) $(OPENCM3_DIR)/lib/lib$(LIB_NAME).a
 	@printf "  LD      $(*).elf\n"
-	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(BINDIR)/$(*).elf
+	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(BIN_DIR)/$(*).elf
 
-$(BINDIR)/%.o: $(SRC_DIR)/%.c
+$(BIN_DIR)/%.o: $(SRC_DIR)/%.c
 	@printf "  CC      $(*).c\n"
-	@mkdir -p $(BINDIR)
+	@mkdir -p $(BIN_DIR)
 	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(SRC_DIR)/$(*).c
 
 clean:
 	@printf "  CLEAN\n"
-	$(Q)$(RM) -f $(BINDIR)/*
+	$(Q)$(RM) -f $(BIN_DIR)/*
 
-$(BINDIR)/%.stlink-flash: $(BINDIR)/%.bin
+$(BIN_DIR)/%.stlink-flash: $(BIN_DIR)/%.bin
 	@printf "  FLASH  $<\n"
 	$(STFLASH) write $< 0x8000000
 
