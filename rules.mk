@@ -161,12 +161,12 @@ $(BIN_DIR)/%.list: $(BIN_DIR)/%.elf
 
 $(BIN_DIR)/%.elf $(BIN_DIR)/%.map: $(OBJS) $(OPENCM3_DIR)/lib/lib$(LIB_NAME).a
 	@printf "  LD      $(@)\n"
-	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(BIN_DIR)/$(*).elf
+	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.c
 	@printf "  CC      $(<)\n"
 	@mkdir -p $(BIN_DIR)
-	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $(SRC_DIR)/$(*).c
+	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 clean:
 	@printf "  CLEAN\n"
