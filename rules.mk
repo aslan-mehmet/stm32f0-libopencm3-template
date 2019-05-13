@@ -56,7 +56,7 @@ ifeq ($(V),1)
 $(info Using $(OPENCM3_DIR) path to library)
 endif
 
-
+DEFS		+= -iquote$(INC_DIR)
 # Old style, assume LDSCRIPT exists
 DEFS		+= -I$(OPENCM3_DIR)/include
 LDFLAGS		+= -L$(OPENCM3_DIR)/lib

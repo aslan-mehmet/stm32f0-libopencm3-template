@@ -18,9 +18,11 @@
 ##
 
 PROJECT_NAME = myProject
-OPENCM3_DIR = $(realpath libopencm3)
 LDSCRIPT = ./stm32f0-discovery.ld
 BINDIR = ./bin
 SRC_DIR = ./src
+INC_DIR = ./inc
+LIB_DIR = ./lib
+OPENCM3_DIR = $(realpath $(LIB_DIR)/libopencm3)
 SRC_FILES = $(wildcard $(SRC_DIR)/*)
 include ./Makefile.include
